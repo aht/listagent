@@ -1,10 +1,9 @@
 """
-A listagent is a factory to conveniently instanstiating sliceagents.
-
-A sliceagent can access and mutate an original list "live": it never
+A listagent can access and mutate a slice of an original list "live": it never
 creates any copy of the original and only refers to it via "address
-translation" -- normalizing its indices by the size of the original list on
-every operation.
+translation".
+
+It is faster if you only need a few elements out of a slice.
 
 >>> x = [22, 7, 2, -5, 8, 4]
 >>> a = listagent(x)
@@ -30,7 +29,7 @@ import collections
 def idx_translator(start, stop, step):
 	def translator(i):
 		i = start + i * step
-		if i > stop:
+		if (step > 0 and i >= stop) or (step < 0 and i < 0):
 			raise IndexError
 		return i
 	return translator
@@ -87,22 +86,23 @@ class listagent(collections.MutableSequence):
 
 	def sort(self):
 		## Shell sort ##
-		t = idx_translator(*self.slice.indices(len(self.list)))
-		l = len(self)
-		gap = l // 2
+		n = len(self)
+		translator = idx_translator(*self.slice.indices(len(self.list)))
+		t = map(translator, range(n))
+		gap = n // 2
 		while gap:
-			for n in range(l):
-				i, j = t(n), t(n-gap)
+			for k in range(n):
+				i, j = t[k], t[k-gap]
 				tmp = self.list[i]
-				while n >= gap and self.list[j] > tmp:
+				while k >= gap and self.list[j] > tmp:
 					self.list[i] = self.list[j]
-					n -= gap
-					i, j = t(n), t(n-gap)
+					k -= gap
+					i, j = t[k], t[k-gap]
 				self.list[i] = tmp
 			gap = 1 if gap == 2 else int(gap * 5.0 / 11)
 
 	def __repr__(self):
 		s = ':'.join(map(str, [self.slice.start, self.slice.stop, self.slice.step]))
 		s = s.replace('None', '')
-		return "<sliceagent[%s] of 0x%x>" % (s, id(self.list))
+		return "<listagent[%s] of 0x%x>" % (s, id(self.list))
 
