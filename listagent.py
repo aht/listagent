@@ -25,21 +25,21 @@ slice.
 
 Listagents offer live view of the original::
 
-	>>> x = [0, 1, 2, 3, 4, 5, 6, 7]
-	>>> a = listagent(x)[1:-1:2]
-	>>> list(a)
-	[1, 3, 5]
-	>>> x += [8, 9, 10]
-	>>> list(a)
-	[1, 3, 5, 7, 9]
+  >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
+  >>> a = listagent(x)[1:-1:2]
+  >>> list(a)
+  [1, 3, 5]
+  >>> x += [8, 9, 10]
+  >>> list(a)
+  [1, 3, 5, 7, 9]
 
 Slice assignment also works::
 
-	>>> x = [0, 1, 2, 3, 4, 5, 6, 7]
-	>>> a = listagent(x)[::2]
-	>>> a[:] = listagent(x)[::-2]
-	>>> x
-	[7, 1, 5, 3, 3, 5, 1, 7]
+  >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
+  >>> a = listagent(x)[::2]
+  >>> a[:] = listagent(x)[::-2]
+  >>> x
+  [7, 1, 5, 3, 3, 5, 1, 7]
 
 You can sort and reverse the agent, which will mutate the original list
 in-place.  Reversing is as fast as list.reverse.  The sort algorithm is Shell
@@ -48,7 +48,7 @@ sort and is slower than list.sort (which is timsort)::
   >>> x = [22, 7, 2, -5, 8, 4]
   >>> a = listagent(x)
 
-	>>> a[1:].sort()
+  >>> a[1:].sort()
   >>> x
   [22, -5, 2, 4, 7, 8]
 
@@ -58,8 +58,8 @@ sort and is slower than list.sort (which is timsort)::
 
 Some test cases::
 
-	>>> list(a[1::2])
-	[-5, 4, 8]
+  >>> list(a[1::2])
+  [-5, 4, 8]
 
   >>> list(a[1:-1])
   [-5, 2, 4, 22]
