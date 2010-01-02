@@ -179,7 +179,7 @@ def permute_next(a):
 	[5, 1, 2, 3, 4]
 	
 	>>> y = [3, 3, 4, 2, 1]
-	>>> permute_next(y);
+	>>> permute_next(y)
 	True
 	>>> y
 	[3, 4, 1, 2, 3]
