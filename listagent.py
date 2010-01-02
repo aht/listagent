@@ -30,7 +30,7 @@ Listagents offer live view of the original::
   >>> list(a)
   [1, 3, 5]
   >>> x += [8, 9, 10]
-	>>> a.align()
+  >>> a.align()
   >>> list(a)
   [1, 3, 5, 7, 9]
 
