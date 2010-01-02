@@ -161,5 +161,22 @@ class listagent(collections.MutableSequence):
 		s = s.replace('None', '')
 		return "<listagent[%s] of 0x%x>" % (s, id(self.list))
 
-if __name__ == '__main__':
-	pass
+
+def permute_next(a):
+    """Transform the given mutable sequence into its next lexicographical
+    permutation.  Return True if that permutation exists, else False.
+    """
+    i = len(a) - 2
+    while i >= 0 and a[i+1] <= a[i]:
+        i -= 1
+    if i < 0:
+        # a is monotonically decreasing
+        return False
+    else:
+        # a[i+1:] is monotonically decreasing
+        j = len(a) - 1
+        while a[j] <= a[i]:
+            j -= 1
+        a[i], a[j] = a[j], a[i]
+        listagent(a)[i+1:].reverse()
+        return True
