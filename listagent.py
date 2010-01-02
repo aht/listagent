@@ -43,8 +43,7 @@ Slice assignment also works::
   [7, 1, 5, 3, 3, 5, 1, 7]
 
 You can sort and reverse the agent, which will mutate the original list
-in-place.  Reversing is as fast as list.reverse.  The sort algorithm is Shell
-sort::
+in-place.  The sort algorithm is Shell sort::
 
   >>> x = [22, 7, 2, -5, 8, 4]
   >>> a = listagent(x)
@@ -99,7 +98,7 @@ class listagent(collections.MutableSequence):
 		return iterate()
 
 	def __getitem__(self, key):
-		if type(key) is type(slice(1)):
+		if type(key) is slice:
 			if key == slice(None):
 				## what's the point?
 				return self
@@ -107,15 +106,15 @@ class listagent(collections.MutableSequence):
 				return listagent(self.list, key)
 			else:
 				return listagent(self, key)
-		elif type(key) is type(1):
+		elif type(key) is int:
 			return self.list[self.translate(key)]
 		else:
 			raise TypeError
 
 	def __setitem__(self, key, value):
-		if type(key) is type(1):
+		if type(key) is int:
 			self.list[self.translate(key)] = value
-		elif type(key) is type(slice(1)):
+		elif type(key) is slice:
 			x = self.list
 			t = self.translate
 			for i in range(len(self)):
@@ -127,13 +126,15 @@ class listagent(collections.MutableSequence):
 			raise TypeError
 	
 	def __delitem__(self, key):
-		if type(key) is type(1):
+		if type(key) is int:
 			del self.list[self.translate(key)]
-		else:
-		    raise TypeError
+		elif type(key) is slice:
+			raise NotImplementedError
+		raise TypeError
 	
 	def insert(self, i, value):
 		self.list.insert(self.translate(i), value)
+		self.align()
 
 	def reverse(self):
 		x = self.list
