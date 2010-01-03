@@ -204,23 +204,23 @@ class sliceagent(collections.MutableSequence):
 		return "<listagent[%s] of 0x%x>" % (s, id(self.list))
 
 
-def permute_next(a):
-	"""Transform the given mutable sequence into its next lexicographical
+def next_permutation(a):
+	"""Transform the given mutable sequence into its succeeding lexicographical
 	permutation.  Return True if that permutation exists, else False.
 
 	>>> x = [4, 5, 3, 2 ,1]
-	>>> permute_next(x)
+	>>> next_permutation(x)
 	True
 	>>> x
 	[5, 1, 2, 3, 4]
 	
 	>>> y = [3, 3, 4, 2, 1]
-	>>> permute_next(y)
+	>>> next_permutation(y)
 	True
 	>>> y
 	[3, 4, 1, 2, 3]
 	
-	>>> permute_next([5, 4, 2, 0])
+	>>> next_permutation([5, 4, 2, 0])
 	False
 	"""
 	i = len(a) - 2
@@ -235,5 +235,5 @@ def permute_next(a):
 		while a[j] <= a[i]:
 			j -= 1
 		a[i], a[j] = a[j], a[i]
-		listagent(a)[i+1:].reverse()
+		sliceagent(a)[i+1:].reverse()
 		return True
