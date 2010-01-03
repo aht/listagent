@@ -108,16 +108,7 @@ class sliceagent(collections.MutableSequence):
 		else:
 			n = int((stop - start) / float(step))
 		self.n = n
-		def translate(i):
-			if i > 0:
-				if i >= n:
-					raise IndexError
-			else:
-				if i < -n:
-					raise IndexError
-				i = i % n
-			return start + i * step
-		self.translate = translate
+		self.translate = lambda i: start + i * step
 
 	def __len__(self):
 		return self.n
@@ -142,6 +133,13 @@ class sliceagent(collections.MutableSequence):
 				## without relying on multiple agents
 				return sliceagent(self, key)
 		elif type(key) is int:
+			n = len(self)
+			if key >= n:
+				raise IndexError
+			elif key < 0:
+				if key < -n:
+					raise IndexError
+				key = key % n
 			return self.list[self.translate(key)]
 		else:
 			raise TypeError
@@ -152,10 +150,11 @@ class sliceagent(collections.MutableSequence):
 		elif type(key) is slice:
 			x = self.list
 			t = self.translate
+			v = iter(value)
 			for i in range(len(self)):
 				try:
-					x[t(i)] = value[i]
-				except IndexError:
+					x[t(i)] = next(v)
+				except StopIteration:
 					raise ValueError("length mismatch")
 		else:
 			raise TypeError
