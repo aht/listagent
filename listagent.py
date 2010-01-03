@@ -86,14 +86,24 @@ class listagent(collections.MutableSequence):
 	def align(self):
 		"""Align the agent to the length of the underlying list"""
 		start, stop, step = self.slice.indices(len(self.list))
-		self.translate = lambda i: start + i * step
 		if step > 0:
-			self.len = int((stop - start - 1) / float(step)) + 1
+			n = int((stop - start - 1) / float(step)) + 1
 		else:
-			self.len = int((stop - start) / float(step))
+			n = int((stop - start) / float(step))
+		self.n = n
+		def translate(i):
+			if i > 0:
+				if i >= n:
+					raise IndexError
+			else:
+				if i < -n:
+					raise IndexError
+				i = i % n
+			return start + i * step
+		self.translate = translate
 
 	def __len__(self):
-		return self.len
+		return self.n
 
 	def __iter__(self):
 		def iterate():
@@ -136,7 +146,8 @@ class listagent(collections.MutableSequence):
 			del self.list[self.translate(key)]
 		elif type(key) is slice:
 			raise NotImplementedError
-		raise TypeError
+		else:
+			raise TypeError
 	
 	def insert(self, i, value):
 		self.list.insert(self.translate(i), value)
