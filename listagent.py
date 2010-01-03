@@ -17,91 +17,113 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-A listagent can access and mutate a slice of an original list "live": it never
-creates any copy of the original and only refers to it via "address translation".
-It is faster than a normal slice if you only need a few elements out of a
-slice.
 
-  $ python -m timeit "range(1000000)[1:-1:5][::7][10000:-10000:42]"
-  10 loops, best of 3: 280 msec per loop
+"""Agents and functions that modify sequences in-place.
 
-  $ python -m timeit -s "from listagent import listagent" \
-    "list(listagent(range(1000000))[1:-1:5][::7][10000:-10000:42])"
-  10 loops, best of 3: 54 msec per loop
+Agents:
+	sliceagent -- represent a live slice of a sequence
 
-Listagents offer live view of the original::
+	chainagent -- represent a chain of multiple sequences
 
-  >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
-  >>> a = sliceagent(x)[1:-1:2]
-  >>> list(a)
-  [1, 3, 5]
-  >>> x[5] = -1
-  >>> a[2]
-  -1
+	zipagent -- represent a sequence formed by zipping together elements
+		of the same index from multiple sequences to move in lockstep
 
-When the length of the underlying list changes, an agent must be re-aligned::
+	All agents act as a single mutable sequence, and will mutate the original
+	sequence(s) when instructed. They are lazy [sic!] and needs to be
+	iter()'ed over if all items are needed.
 
-  >>> x += [8, 9, 10]
-  >>> a.align()
-  >>> list(a)
-  [1, 3, -1, 7, 9]
+Functions:
+	next_permutation -- transform a sequence into its lexicographically-
+		succeeding permutation
 
-But this is not necessary if the change is brought about by the agent itself::
-
-  >>> del a[2]
-  >>> list(a)
-  [1, 3, 6, 8]
-
-By now, the agent has mutated the original list::
-
-  >>> x
-  [0, 1, 2, 3, 4, 6, 7, 8, 9, 10]
-
-Slice assignment also works::
-
-  >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
-  >>> a = sliceagent(x)[::2]
-  >>> a[:] = sliceagent(x)[::-2]
-  >>> x
-  [7, 1, 5, 3, 3, 5, 1, 7]
-
-You can also sort and reverse the agent, the sort algorithm is Shell sort::
-
-  >>> x = [22, 7, 2, -5, 8, 4]
-  >>> a = sliceagent(x)
-
-  >>> a[1:].sort()
-  >>> x
-  [22, -5, 2, 4, 7, 8]
-
-  >>> a[::2].reverse()
-  >>> x
-  [7, -5, 2, 4, 22, 8]
-
-Some test cases::
-
-  >>> list(a[1::2])
-  [-5, 4, 8]
-
-  >>> list(a[1:-1])
-  [-5, 2, 4, 22]
-
-  >>> list(a[::-1])
-  [8, 22, 4, 2, -5, 7]
+	partial_sort -- transform the congregation of two sequences, such that
+		the smallest elements are sorted into the first sequence
 """
 
 import collections
 
 
 class sliceagent(collections.MutableSequence):
+	"""
+	A sliceagent can access and mutate a slice of an original list live: it never
+	creates any copy of the original and only refers to it via "address
+	translation".  It is faster than a normal slice if you only need a few
+	elements out of a slice.
+
+	$ python -m timeit "range(1000000)[1:-1:5][::7][10000:-10000:42]"
+	10 loops, best of 3: 280 msec per loop
+
+	$ python -m timeit -s "from listagent import listagent" \
+		"list(listagent(range(1000000))[1:-1:5][::7][10000:-10000:42])"
+	10 loops, best of 3: 54 msec per loop
+
+	A sliceagent represent a live slice of the original::
+
+	>>> x = [0, 1, 2, 3, 4, 5, 6, 7]
+	>>> a = sliceagent(x)[1:-1:2]
+	>>> list(a)
+	[1, 3, 5]
+	>>> x[5] = -1
+	>>> a[2]
+	-1
+
+	When the length of the underlying list changes, an agent must be re-aligned::
+
+	>>> x += [8, 9, 10]
+	>>> a.align()
+	>>> list(a)
+	[1, 3, -1, 7, 9]
+
+	But this is not necessary if the change is brought about by the agent itself::
+
+	>>> del a[2]
+	>>> list(a)
+	[1, 3, 6, 8]
+
+	By now, the agent has mutated the original list::
+
+	>>> x
+	[0, 1, 2, 3, 4, 6, 7, 8, 9, 10]
+
+	Slice assignment also works::
+
+	>>> x = [0, 1, 2, 3, 4, 5, 6, 7]
+	>>> a = sliceagent(x)[::2]
+	>>> a[:] = sliceagent(x)[::-2]
+	>>> x
+	[7, 1, 5, 3, 3, 5, 1, 7]
+
+	You can also sort and reverse the agent, the sort algorithm is Shell sort::
+
+	>>> x = [22, 7, 2, -5, 8, 4]
+	>>> a = sliceagent(x)
+
+	>>> a[1:].sort()
+	>>> x
+	[22, -5, 2, 4, 7, 8]
+
+	>>> a[::2].reverse()
+	>>> x
+	[7, -5, 2, 4, 22, 8]
+
+	Some test cases::
+
+	>>> list(a[1::2])
+	[-5, 4, 8]
+
+	>>> list(a[1:-1])
+	[-5, 2, 4, 22]
+
+	>>> list(a[::-1])
+	[8, 22, 4, 2, -5, 7]
+	"""
 	def __init__(self, sequence, slice=slice(None)):
 		self.origin = sequence
 		self.slice = slice
 		self.align()
 
 	def align(self):
-		"""Align the agent to the length of the underlying list"""
+		"Align the agent to the length of the original sequence"
 		start, stop, step = self.slice.indices(len(self.origin))
 		if step > 0:
 			n = int((stop - start - 1) / float(step)) + 1
@@ -214,8 +236,8 @@ class chainagent(collections.MutableSequence):
 
 
 def next_permutation(a):
-	"""Transform the given mutable sequence into its succeeding lexicographical
-	permutation.  Return True if that permutation exists, else False.
+	"""Transform the given mutable sequence into its lexicographically-
+	succeeding permutation. Return True if that permutation exists, else False.
 
 	>>> x = [4, 5, 3, 2 ,1]
 	>>> next_permutation(x)
@@ -249,7 +271,7 @@ def next_permutation(a):
 
 
 def partial_sort(x, y):
-	"""Transform the the congregration of the two given mutable sequence,
+	"""Transform the congregation of the two given mutable sequence,
 	such that the smallest elements are sorted into the first sequence.
 
 	>>> x = [74,97,22,35,99,27,17,87,82,100,97,87,94,37,16,4,12,58,4,78]
