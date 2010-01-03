@@ -162,6 +162,7 @@ class sliceagent(collections.MutableSequence):
 	def __delitem__(self, key):
 		if type(key) is int:
 			del self.list[self.translate(key)]
+			self.align()
 		elif type(key) is slice:
 			raise NotImplementedError
 		else:
