@@ -237,3 +237,78 @@ def next_permutation(a):
 		a[i], a[j] = a[j], a[i]
 		sliceagent(a)[i+1:].reverse()
 		return True
+
+
+def partial_sort(x, y):
+	"""Transform the the congregration of the two given mutable sequence,
+	such that the smallest elements are sorted into the first sequence.
+
+	>>> x = [74,97,22,35,99,27,17,87,82,100,97,87,94,37,16,4,12,58,4,78]
+	>>> a = sliceagent(x)
+
+	### Move the 5 smallest elements with even indices up the list
+	>>> partial_sort(a[:10:2], a[10::2])
+	>>> x[:10:2]
+	[4, 12, 16, 17, 22]
+	"""
+	heapify(y)
+	for i in range(len(x)):
+		if x[i] > y[0]:
+			x[i] = heappushpop(y, x[i])
+	x.sort()
+
+
+# try:
+#   from python import heapq [sic!]
+# except that:
+#   the C implementation does not heapify other mutable sequence types
+#   such as deque and agents
+# finally:
+#   manually copy and paste the code from /usr/lib/python2.6/heapq.py
+
+def heappushpop(heap, item):
+	"""Fast version of a heappush followed by a heappop."""
+	if heap and heap[0] < item:
+		item, heap[0] = heap[0], item
+		_siftup(heap, 0)
+	return item
+
+def heapify(x):
+	"""Transform list into a heap, in-place, in O(len(heap)) time."""
+	n = len(x)
+	for i in reversed(xrange(n//2)):
+		_siftup(x, i)
+
+def _siftdown(heap, startpos, pos):
+	newitem = heap[pos]
+	# Follow the path to the root, moving parents down until finding a place
+	# newitem fits.
+	while pos > startpos:
+		parentpos = (pos - 1) >> 1
+		parent = heap[parentpos]
+		if newitem < parent:
+			heap[pos] = parent
+			pos = parentpos
+			continue
+		break
+	heap[pos] = newitem
+
+def _siftup(heap, pos):
+	endpos = len(heap)
+	startpos = pos
+	newitem = heap[pos]
+	# Bubble up the smaller child until hitting a leaf.
+	childpos = 2*pos + 1	# leftmost child position
+	while childpos < endpos:
+		# Set childpos to index of smaller child.
+		rightpos = childpos + 1
+		if rightpos < endpos and not heap[childpos] < heap[rightpos]:
+			childpos = rightpos
+		# Move the smaller child up.
+		heap[pos] = heap[childpos]
+		pos = childpos
+		childpos = 2*pos + 1
+	# The leaf at pos is empty now.  Put newitem there, and bubble it up
+	# to its final resting place (by sifting its parents down).
+	heap[pos] = newitem
+	_siftdown(heap, startpos, pos)
