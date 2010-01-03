@@ -226,13 +226,42 @@ class sliceagent(collections.MutableSequence):
 		return "<listagent[%s] of 0x%x>" % (s, id(self.origin))
 
 
-class chainagent(collections.MutableSequence):
+from bisect import bisect_left
+
+class chainagent(object):
+	"""
+	>>> x, y, z = range(3), range(5), range(4)
+	>>> c = chainagent(x, y, z)
+	>>> map(c.__getitem__, range(12))
+	[0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3]
+	"""
 	def __init__(self, *sequences):
 		self.origin = sequences
+		self.align()
 	
 	def align(self):
-		self.n = map(len, sequences)
+		"Align the agent to the length of the original sequence"
+		lns = map(len, self.origin)
+		self.n = sum(lns)
+		border = [-1]
+		for x in lns:
+			border.append(border[-1] + x)
+		def translate(i):
+			k = bisect_left(border, i) - 1
+			idx = i - border[k] - 1
+			return k, idx
+		self.translate = translate
+	
+	def __len__(self):
+		return self.n
+	
+	def __getitem__(self, key):
+		k, idx = self.translate(key)
+		return self.origin[k][idx]
 
+	def __setitem__(self, key, value):
+		k, idx = self.translate(key)
+		self.origin[k][idx] = value
 
 
 def next_permutation(a):
