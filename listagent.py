@@ -51,7 +51,7 @@ But this is not necessary if the change is brought about by the agent itself::
 
   >>> del a[2]
   >>> list(a)
-  >>> [1, 3, 7, 9]
+  [1, 3, 6, 8]
 
 By now, the agent has mutated the original list::
 
@@ -95,14 +95,14 @@ import collections
 
 
 class sliceagent(collections.MutableSequence):
-	def __init__(self, list, slice=slice(None)):
-		self.list = list
+	def __init__(self, sequence, slice=slice(None)):
+		self.origin = sequence
 		self.slice = slice
 		self.align()
 
 	def align(self):
 		"""Align the agent to the length of the underlying list"""
-		start, stop, step = self.slice.indices(len(self.list))
+		start, stop, step = self.slice.indices(len(self.origin))
 		if step > 0:
 			n = int((stop - start - 1) / float(step)) + 1
 		else:
@@ -115,7 +115,7 @@ class sliceagent(collections.MutableSequence):
 
 	def __iter__(self):
 		def iterate():
-			x = self.list
+			x = self.origin
 			t = self.translate
 			for i in range(len(self)):
 				yield x[t(i)]
@@ -127,7 +127,7 @@ class sliceagent(collections.MutableSequence):
 				## what's the point?
 				return self
 			elif self.slice == slice(None):
-				return sliceagent(self.list, key)
+				return sliceagent(self.origin, key)
 			else:
 				## TODO: it should be possible to compose slices
 				## without relying on multiple agents
@@ -140,15 +140,15 @@ class sliceagent(collections.MutableSequence):
 				if key < -n:
 					raise IndexError
 				key = key % n
-			return self.list[self.translate(key)]
+			return self.origin[self.translate(key)]
 		else:
 			raise TypeError
 
 	def __setitem__(self, key, value):
 		if type(key) is int:
-			self.list[self.translate(key)] = value
+			self.origin[self.translate(key)] = value
 		elif type(key) is slice:
-			x = self.list
+			x = self.origin
 			t = self.translate
 			v = iter(value)
 			for i in range(len(self)):
@@ -161,7 +161,7 @@ class sliceagent(collections.MutableSequence):
 	
 	def __delitem__(self, key):
 		if type(key) is int:
-			del self.list[self.translate(key)]
+			del self.origin[self.translate(key)]
 			self.align()
 		elif type(key) is slice:
 			raise NotImplementedError
@@ -169,11 +169,11 @@ class sliceagent(collections.MutableSequence):
 			raise TypeError
 	
 	def insert(self, i, value):
-		self.list.insert(self.translate(i), value)
+		self.origin.insert(self.translate(i), value)
 		self.align()
 
 	def reverse(self):
-		x = self.list
+		x = self.origin
 		t = self.translate
 		i, j = 0, len(self)-1
 		while i <= j:
@@ -183,7 +183,7 @@ class sliceagent(collections.MutableSequence):
 
 	def sort(self):
 		## Shell sort ##
-		x = self.list
+		x = self.origin
 		n = len(self)
 		t = map(self.translate, range(n))
 		gap = n // 2
@@ -201,7 +201,16 @@ class sliceagent(collections.MutableSequence):
 	def __repr__(self):
 		s = ':'.join(map(str, [self.slice.start, self.slice.stop, self.slice.step]))
 		s = s.replace('None', '')
-		return "<listagent[%s] of 0x%x>" % (s, id(self.list))
+		return "<listagent[%s] of 0x%x>" % (s, id(self.origin))
+
+
+class chainagent(collections.MutableSequence):
+	def __init__(self, *sequences):
+		self.origin = sequences
+	
+	def align(self):
+		self.n = map(len, sequences)
+
 
 
 def next_permutation(a):
