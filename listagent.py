@@ -23,6 +23,12 @@ creates any copy of the original and only refers to it via "address translation"
 It is faster than a normal slice if you only need a few elements out of a
 slice.
 
+  $ python -m timeit 'range(1000000)[1:-1:5][::7][10000:-10000:42]'
+  10 loops, best of 3: 280 msec per loop
+
+  $ python -m timeit -s'from listagent import listagent' 'listagent(range(1000000))[1:-1:5][::7][10000:-10000:42]'
+	10 loops, best of 3: 54 msec per loop
+
 Listagents offer live view of the original::
 
   >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
