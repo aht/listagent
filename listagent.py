@@ -23,36 +23,53 @@ creates any copy of the original and only refers to it via "address translation"
 It is faster than a normal slice if you only need a few elements out of a
 slice.
 
-  $ python -m timeit 'range(1000000)[1:-1:5][::7][10000:-10000:42]'
+  $ python -m timeit "range(1000000)[1:-1:5][::7][10000:-10000:42]"
   10 loops, best of 3: 280 msec per loop
 
-  $ python -m timeit -s'from listagent import listagent' 'listagent(range(1000000))[1:-1:5][::7][10000:-10000:42]'
-	10 loops, best of 3: 54 msec per loop
+  $ python -m timeit -s "from listagent import listagent" \
+    "list(listagent(range(1000000))[1:-1:5][::7][10000:-10000:42])"
+  10 loops, best of 3: 54 msec per loop
 
 Listagents offer live view of the original::
 
   >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
-  >>> a = listagent(x)[1:-1:2]
+  >>> a = sliceagent(x)[1:-1:2]
   >>> list(a)
   [1, 3, 5]
+  >>> x[5] = -1
+  >>> a[2]
+  -1
+
+When the length of the underlying list changes, an agent must be re-aligned::
+
   >>> x += [8, 9, 10]
   >>> a.align()
   >>> list(a)
-  [1, 3, 5, 7, 9]
+  [1, 3, -1, 7, 9]
+
+But this is not necessary if the change is brought about by the agent itself::
+
+  >>> del a[2]
+  >>> list(a)
+  >>> [1, 3, 7, 9]
+
+By now, the agent has mutated the original list::
+
+  >>> x
+  [0, 1, 2, 3, 4, 6, 7, 8, 9, 10]
 
 Slice assignment also works::
 
   >>> x = [0, 1, 2, 3, 4, 5, 6, 7]
-  >>> a = listagent(x)[::2]
-  >>> a[:] = listagent(x)[::-2]
+  >>> a = sliceagent(x)[::2]
+  >>> a[:] = sliceagent(x)[::-2]
   >>> x
   [7, 1, 5, 3, 3, 5, 1, 7]
 
-You can sort and reverse the agent, which will mutate the original list
-in-place.  The sort algorithm is Shell sort::
+You can also sort and reverse the agent, the sort algorithm is Shell sort::
 
   >>> x = [22, 7, 2, -5, 8, 4]
-  >>> a = listagent(x)
+  >>> a = sliceagent(x)
 
   >>> a[1:].sort()
   >>> x
@@ -77,7 +94,7 @@ Some test cases::
 import collections
 
 
-class listagent(collections.MutableSequence):
+class sliceagent(collections.MutableSequence):
 	def __init__(self, list, slice=slice(None)):
 		self.list = list
 		self.slice = slice
@@ -119,9 +136,11 @@ class listagent(collections.MutableSequence):
 				## what's the point?
 				return self
 			elif self.slice == slice(None):
-				return listagent(self.list, key)
+				return sliceagent(self.list, key)
 			else:
-				return listagent(self, key)
+				## TODO: it should be possible to compose slices
+				## without relying on multiple agents
+				return sliceagent(self, key)
 		elif type(key) is int:
 			return self.list[self.translate(key)]
 		else:
